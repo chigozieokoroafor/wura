@@ -132,7 +132,7 @@ def email_verification():
             
     return jsonify({"detail":"Account with provided email not found", "status":"error"}), 404
 
-
+#@customer.route("")
     
 
 @customer.route("/test", methods=["GET"])
