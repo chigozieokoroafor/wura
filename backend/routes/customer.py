@@ -28,11 +28,9 @@ def token_required(f):
     return decorated
 
 
-@customer.route("/home", methods=["GET"])
-def home():
-    data = jsonify(message="Welcome To Customer API")
-    print()
-    
+@customer.route("/", methods=["GET"])
+def h():
+    data = jsonify(message="Welcome To Customer API")    
     return data
 
 @customer.route("/createAccount", methods=["POST"])
@@ -132,7 +130,10 @@ def email_verification():
             
     return jsonify({"detail":"Account with provided email not found", "status":"error"}), 404
 
-#@customer.route("")
+@customer.route("/home", methods=["GET"])
+def home():
+    if request.method == 'GET':
+       pass 
     
 
 @customer.route("/test", methods=["GET"])
