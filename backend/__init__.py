@@ -4,7 +4,7 @@ from flask_cors import CORS
 import string, random
 from backend.routes.admin import admin
 from backend.routes.customer import customer
-from backend.routes.seller import merchant
+#from backend.routes.seller import merchant
 from backend.config import secret_key
 
 
@@ -17,5 +17,5 @@ CORS(app)
 #configure thee blueprints here
 app.register_blueprint(admin, url_prefix="/api/admin")
 app.register_blueprint(customer, url_prefix="/api/customer")
-app.register_blueprint(merchant, url_prefix="/api/merchant")
+#app.register_blueprint(merchant, url_prefix="/api/merchant")
 
