@@ -1,4 +1,3 @@
-from crypt import methods
 from flask import Blueprint, jsonify, Response, request
 import json
 from werkzeug.security import check_password_hash, generate_password_hash

@@ -42,8 +42,9 @@ def signup():
         data[i] = info.get(i)
     try:
         password = data["password"]
+        email = data["email"]
     except KeyError as e:
-        return {"detail":"password field missing or empty", "status":"error"}, 400
+        return {"detail":f"{str(e)} field missing or empty", "status":"error"}, 400
 
     pwd_hashed = generate_password_hash(password, salt_length=32)
     data["pwd"] = pwd_hashed
