@@ -12,7 +12,7 @@ from email import contentmanager
 
 class Authentication:
     def generate_access_token(data):
-        exp = datetime.datetime.now() + datetime.timedelta(seconds=40)
+        exp = datetime.datetime.now() + datetime.timedelta(hours=1)
         #data["start"] = datetime.datetime.timestamp(datetime.datetime.now())
         data["exp"] = datetime.datetime.timestamp(exp)
         token = jwt.encode(data, secret_key,algorithm="HS256")
