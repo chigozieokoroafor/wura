@@ -5,33 +5,19 @@ from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo.errors import DuplicateKeyError
 import jwt, bson, datetime
-from functools import wraps
-from jwt.exceptions import ExpiredSignatureError, DecodeError
+
+
 
 customer = Blueprint("customer", __name__)
 
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        bearer_token = request.headers.get("Authorization")
-        
-        if not bearer_token:
-            return jsonify({"message": "Token is missing"}), 403
-        try:          
-            data = jwt.decode(bearer_token, secret_key,algorithms=["HS256"])
-        except ExpiredSignatureError as e:
-            return jsonify({"message":"Token Expired", "status":"fail"}), 400
-        except DecodeError as d:
-            return jsonify({"message":"Incorrect Token", "status":"fail"}), 400
-        return f(*args, **kwargs)
-    return decorated
 
 
 @customer.route("/", methods=["GET"])
 def h():
     data = jsonify(message="Welcome To Customer API")    
     return data
+
 
 @customer.route("/createAccount", methods=["POST"])
 def signup():
@@ -41,14 +27,15 @@ def signup():
     for i in keys:
         data[i] = info.get(i)
     try:
-        password = data["password"]
         email = data["email"]
+        password = data["password"]
     except KeyError as e:
         return {"detail":f"{str(e)} field missing or empty", "status":"error"}, 400
 
     pwd_hashed = generate_password_hash(password, salt_length=32)
     data["pwd"] = pwd_hashed
     data["verified"] = False
+    data["role"] = ["user"]
     data.pop("password")
     try :
         users.insert_one(data)
@@ -137,9 +124,8 @@ def home():
     if request.method == 'GET':
        pass 
     
-
 @customer.route("/test", methods=["GET"])
-@token_required
+@Authentication.token_required #.token_required
 def test():
     token = request.headers.get("Authorization")
     data = jwt.decode(token, secret_key,algorithms=["HS256"])

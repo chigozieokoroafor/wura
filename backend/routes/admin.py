@@ -28,6 +28,8 @@ def createAccount():
     hashed_password = generate_password_hash(password,salt_length=64)
     data.pop("password")
     data["pwd"] = hashed_password
+    data["verified"] = False
+    data["role"] = ["admin"]
     admin_col.insert_one(data)
     return jsonify({"detail":"account created","status":"success"}), 200
 

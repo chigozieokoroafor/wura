@@ -8,11 +8,14 @@ from email.mime.text import MIMEText
 from mimetypes import MimeTypes
 import smtplib, ssl
 from email import contentmanager
+from flask import request, jsonify
+from functools import wraps
+from jwt.exceptions import ExpiredSignatureError, DecodeError
 
 
 class Authentication:
     def generate_access_token(data):
-        exp = datetime.datetime.now() + datetime.timedelta(hours=1)
+        exp = datetime.datetime.now() + datetime.timedelta(seconds=40)
         #data["start"] = datetime.datetime.timestamp(datetime.datetime.now())
         data["exp"] = datetime.datetime.timestamp(exp)
         token = jwt.encode(data, secret_key,algorithm="HS256")
@@ -28,7 +31,7 @@ class Authentication:
     def sendMail(email, otp_code):
         try:
             email_sender = "okoroaforc14@gmail.com"
-            email_password = "lwbahbzqepnxbphj"
+            email_password = "fskhwjqqbktuqkzg"
 
             email_reciever = email
             #subject = "test"
@@ -49,6 +52,23 @@ class Authentication:
             return {"detail":"verification mail sent", "status":"success"}
         except smtplib.SMTPAuthenticationError as e:
             return {"detail":"error sending verification mail", "status":"fail"}
+
+    def token_required(f):
+        @wraps(f)
+        def decorated(*args, **kwargs):
+            bearer_token = request.headers.get("Authorization")
+            
+            if not bearer_token:
+                return jsonify({"message": "Token is missing"}), 403
+            try:          
+                data = jwt.decode(bearer_token, secret_key,algorithms=["HS256"])
+            except ExpiredSignatureError as e:
+                return jsonify({"message":"Token Expired", "status":"fail"}), 400
+            except DecodeError as d:
+                return jsonify({"message":"Incorrect Token", "status":"fail"}), 400
+            return f(*args, **kwargs)
+        return decorated
+
 
 def compile_currencies():
     country_list = [("Afghanistan", "AFN", "AF"),
