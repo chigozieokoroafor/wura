@@ -103,15 +103,18 @@ def email_verification():
     if len(user_list)>0:
         user_check = user_list[0]
         now = datetime.datetime.timestamp(datetime.datetime.now())
-        start_time = user_check["otp_data"]["starttime"]
-        stop_time = user_check["otp_data"]["stoptime"]
+        try:
+            start_time = user_check["otp_data"]["starttime"]
+            stop_time = user_check["otp_data"]["stoptime"]
+        except KeyError as e:
+            return jsonify({"detail":"OTP already used", "status":"error"}), 400
         otp_verify = False
         if stop_time > now > start_time :
             if otp == user_check["otp_data"]["otp"]:
                 otp_verify = True
-            else: return jsonify({"detail":"Incorrect"}), 400
+            else: return jsonify({"detail":"Invalid OTP provided", "status":"fail"}), 400
         else:
-            return jsonify(message="OTP Expired", status="error", error_status=1), 400
+            return jsonify(message="OTP Expired", status="error"), 400
         
         if otp_verify == True:
             users.find_one_and_update({"email":email},{"$set":{"otp_data":{}, "verified":True}})
