@@ -53,7 +53,7 @@ def signup():
         users.insert_one(data)
     except DuplicateKeyError as e:
         return jsonify({"detail":"Email address already used","status":"fail"}), 400
-    return jsonify(detail="account created successfully", status="success"), 200
+    return jsonify(detail="account created successfully", status="success", verified=False), 200
     
 @customer.route("/emailCheck", methods=["POST"])
 def emailCheck():
@@ -83,6 +83,7 @@ def signin():
             token = Authentication.generate_access_token(d)
             user["access_token"] = token
             user.pop("_id")
+            user.pop("pwd")
             return jsonify({"detail":user, "status":"success"}), 200
         return jsonify({"detail":"Incorrect Details", "status":"fail"}), 401
         
@@ -125,7 +126,7 @@ def email_verification():
             return jsonify(message="OTP Expired", status="error", error_status=1), 400
         
         if otp_verify == True:
-            users.find_one_and_update({"email":email},{"$set":{"otp_data":{}}})
+            users.find_one_and_update({"email":email},{"$set":{"otp_data":{}, "verified":True}})
             return jsonify({"detail":"OTP Correct", "status":"success"}), 200
             
     return jsonify({"detail":"Account with provided email not found", "status":"error"}), 404
