@@ -38,6 +38,7 @@ def signup():
     data["role"] = ["user"]
     otp_data = Authentication.generate_otp()
     data["otp_data"] = otp_data
+    data["timestamp"] = datetime.datetime.now()
     data.pop("password")
     try :
         mail_send = Authentication.sendMail(email, otp_data["otp"])
