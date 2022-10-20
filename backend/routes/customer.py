@@ -4,7 +4,7 @@ from backend.functions import Authentication
 from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo.errors import DuplicateKeyError
-import jwt, bson, datetime
+import jwt, bson, datetime,random
 
 
 
@@ -118,9 +118,29 @@ def email_verification():
         
         if otp_verify == True:
             users.find_one_and_update({"email":email},{"$set":{"otp_data":{}, "verified":True}})
-            return jsonify({"detail":"OTP Correct", "status":"success"}), 200
+            data = {"email":email}
+            jwt_token = Authentication.generate_access_token(data,1)
+            return jsonify({"detail":"OTP Correct", "status":"success","token":jwt_token}), 200
             
     return jsonify({"detail":"Account with provided email not found", "status":"error"}), 404
+
+@customer.route("/updatePassword", methods=["POST"])
+@Authentication.token_required
+def newPassword():
+    token = request.headers.get("Authorization")
+    data = jwt.decode(token, secret_key,algorithms=["HS256"])    
+    new_password = request.json.get("newPassword")
+    #data["newPassword"] = new_password
+    email = data["email"]
+    user_cursor = users.find({"email":email}).hint("email_1")
+    user_list = list(user_cursor)
+    user = user_list[0]
+    choice_length = random.choice([16,32,64])
+    new_hash = generate_password_hash(new_password,salt_length=choice_length)
+    users.find_one_and_update({"_id":user["_id"]}, {"$set":{"pwd":new_hash}})
+    
+    return jsonify({"detail":"Password Updated Successfully", "status":"success"}), 200
+
 
 @customer.route("/home", methods=["GET"])
 def home():

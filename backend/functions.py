@@ -14,8 +14,8 @@ from jwt.exceptions import ExpiredSignatureError, DecodeError
 
 
 class Authentication:
-    def generate_access_token(data):
-        exp = datetime.datetime.now() + datetime.timedelta(seconds=40)
+    def generate_access_token(data, minutes=60):
+        exp = datetime.datetime.now() + datetime.timedelta(minutes=minutes)
         #data["start"] = datetime.datetime.timestamp(datetime.datetime.now())
         data["exp"] = datetime.datetime.timestamp(exp)
         token = jwt.encode(data, secret_key,algorithm="HS256")
@@ -59,13 +59,13 @@ class Authentication:
             bearer_token = request.headers.get("Authorization")
             
             if not bearer_token:
-                return jsonify({"message": "Token is missing"}), 403
+                return jsonify({"detail": "Token is missing","status":"error"}), 403
             try:          
                 data = jwt.decode(bearer_token, secret_key,algorithms=["HS256"])
             except ExpiredSignatureError as e:
-                return jsonify({"message":"Token Expired", "status":"fail"}), 400
+                return jsonify({"detail":"Token Expired", "status":"fail"}), 400
             except DecodeError as d:
-                return jsonify({"message":"Incorrect Token", "status":"fail"}), 400
+                return jsonify({"detail":"Incorrect Token", "status":"fail"}), 400
             return f(*args, **kwargs)
         return decorated
 
