@@ -140,7 +140,10 @@ def newPassword():
     data = jwt.decode(token, secret_key,algorithms=["HS256"])    
     new_password = request.json.get("newPassword")
     #data["newPassword"] = new_password
-    email = data["email"]
+    try:
+        email = data["email"]
+    except KeyError as e:
+        return jsonify({"detail":"Incorrect token provided", "status":"error"}), 401
     user_cursor = users.find({"email":email}).hint("email_1")
     user_list = list(user_cursor)
     user = user_list[0]
@@ -155,7 +158,10 @@ def newPassword():
 def home():
     if request.method == 'GET':
        pass 
-    
+
+
+#
+
 @customer.route("/test", methods=["GET"])
 @Authentication.token_required #.token_required
 def test():
