@@ -36,9 +36,17 @@ def signup():
     data["pwd"] = pwd_hashed
     data["verified"] = False
     data["role"] = ["user"]
+    otp_data = Authentication.generate_otp()
+    data["otp_data"] = otp_data
     data.pop("password")
     try :
-        users.insert_one(data)
+        mail_send = Authentication.sendMail(email, otp_data["otp"])
+        if mail_send["status"] == "success":
+            users.insert_one(data)
+        else:
+            return jsonify({"detail":"Error occured while creating account","status":"fail"}), 400
+        #users.find_one_and_update({"email":email}, {"$set":{"otp_data":otp_data}})
+        
     except DuplicateKeyError as e:
         return jsonify({"detail":"Email address already used","status":"fail"}), 400
     return jsonify(detail="account created successfully", status="success", verified=False), 200
