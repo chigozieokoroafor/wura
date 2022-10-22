@@ -6,6 +6,7 @@ from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo.errors import DuplicateKeyError
 import jwt, bson, datetime,random
+from bson.errors import InvalidId
 
 
 
@@ -178,7 +179,10 @@ def createRefresh():
     info = request.json
     id = info.get("id")
     #token = info.get("token")
-    user_check = users.find_one({"_id":bson.ObjectId(id)})
+    try:
+        user_check = users.find_one({"_id":bson.ObjectId(id)})
+    except InvalidId as e:
+        return jsonify({"detail":"Invalid id passed", "status":"error"}), 401
     if user_check is not None:
         data = {"id":id,"role":user_check["role"]}
         token = Authentication.generate_access_token(data,1440)
