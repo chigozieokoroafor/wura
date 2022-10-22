@@ -1,5 +1,6 @@
 from datetime import datetime
 from bson import ObjectId
+from bson.errors import InvalidId
 from flask import Blueprint, jsonify, Response, request
 import json,jwt
 import pymongo
@@ -250,7 +251,10 @@ def createRefresh():
     info = request.json
     id = info.get("id")
     #token = info.get("token")
-    user_check = admin_col.find_one({"_id":ObjectId(id)})
+    try:
+        user_check = admin_col.find_one({"_id":ObjectId(id)})
+    except InvalidId as e:
+        return jsonify({"detail":"Invalid id passed", "status":"error"}), 401
     if user_check is not None:
         data = {"id":id,"role":user_check["role"]}
         token = Authentication.generate_access_token(data,1440)
