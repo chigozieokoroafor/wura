@@ -137,7 +137,7 @@ def updatePromotions():
             except InvalidId as e :
                 return jsonify({"detail":"Invalid id passed", "status":"error"}), 403
 
-            return jsonify({"detail":"Promotion data updated", "status":"Unavailable"}),404
+            return jsonify({"detail":"Promotion data updated", "status":"success"}),404
         return jsonify({"detail":"Unauthorized Access","status":"fail"}), 401
         
     if request.method =="DELETE":
@@ -232,9 +232,12 @@ def news_route():
             except KeyError as e:
                 return jsonify({"detail":"id parameter cannot be empty","status":"fail"}),401
             data["timestamp"] = datetime.timestamp(datetime.now())
-            news_col.find_one_and_update({"_id":ObjectId(id)}, {"$set": data})        
+            try:
+                news_col.find_one_and_update({"_id":ObjectId(id)}, {"$set": data})        
+            except InvalidId as e:
+                return jsonify({"detail":"Invalid Id passed", "status":"error"}), 403
 
-            return jsonify({"detail":"Promotion data updated", "status":"Unavailable"}),404
+            return jsonify({"detail":"Promotion data updated", "status":"success"}),200
         return jsonify({"detail":"Unauthorized Access","status":"fail"}), 401
         
     if request.method =="DELETE":
