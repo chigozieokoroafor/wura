@@ -7,6 +7,8 @@ users = db["users"]
 admin_col = db["admin"]
 products = db["products"]
 country = db["country_data"]
+promotions_col = db["promotions"]
+news_col = db["news"]
 
 users.create_index("email", unique=True)
 admin_col.create_index("email", unique=True)

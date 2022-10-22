@@ -1,6 +1,7 @@
 from flask import Blueprint, Response, jsonify, request
-from backend.db import users
-from backend.functions import Authentication
+import pymongo
+from backend.db import users, promotions_col,news_col
+from backend.functions import Authentication, filter_cursor
 from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo.errors import DuplicateKeyError
@@ -154,19 +155,41 @@ def newPassword():
     return jsonify({"detail":"Password Updated Successfully", "status":"success"}), 200
 
 
+
 @customer.route("/home", methods=["GET"])
 def home():
     if request.method == 'GET':
-       pass 
+        promotion_cursor = promotions_col.find().sort("timestamp",pymongo.DESCENDING)
+        promotion_list = filter_cursor(promotion_cursor)
+        news_cursor = news_col.find().sort("timestamp",pymongo.DESCENDING)
+        news = filter_cursor(news_cursor)
+        
+        data_object = {
+            "promotions":promotion_list,
+            "news":news,
+            "new_products": [],
+            "lucky_picks":[]
+        }
+        return jsonify(data_object)
 
 
-#
+@customer.route("/createRefreshToken",methods=["POST"])
+def createRefresh():
+    info = request.json
+    id = info.get("id")
+    #token = info.get("token")
+    user_check = users.find_one({"_id":bson.ObjectId(id)})
+    if user_check is not None:
+        data = {"id":id,"role":user_check["role"]}
+        token = Authentication.generate_access_token(data,1440)
+        return jsonify({"detail":{"access_token":token}, "status":"success"}), 200
+    return jsonify({"detail":"User not found","status":"error"}), 404
 
 @customer.route("/test", methods=["GET"])
 @Authentication.token_required #.token_required
 def test():
     token = request.headers.get("Authorization")
     data = jwt.decode(token, secret_key,algorithms=["HS256"])
-
+    # check if jwt token is expiring, generate a new one 
     return {"message":data}
 

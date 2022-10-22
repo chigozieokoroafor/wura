@@ -69,6 +69,31 @@ class Authentication:
             return f(*args, **kwargs)
         return decorated
 
+    def generate_refresh_token(token):
+        decoded = jwt.decode(token,secret_key,["HS256"])
+        now = datetime.datetime.time(datetime.datetime.now())
+        exp = decoded["exp"]
+
+        difference = exp - now
+        check = 0<difference<60.0
+
+        if check is True:
+            decoded.pop("exp")
+            t = Authentication.generate_access_token(decoded)
+            return t
+        return ""
+
+
+def filter_cursor(cursor):
+    main_list = []
+    for i in cursor:
+        i.pop("_id")
+        try:
+            i.pop("timestamp")
+        except KeyError as e :
+            pass
+        main_list.append(i)
+    return main_list
 
 def compile_currencies():
     country_list = [("Afghanistan", "AFN", "AF"),
