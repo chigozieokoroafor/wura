@@ -132,7 +132,10 @@ def updatePromotions():
             except KeyError as e:
                 return jsonify({"detail":"id parameter cannot be empty","status":"fail"}),401
             data["timestamp"] = datetime.timestamp(datetime.now())
-            promotions_col.find_one_and_update({"_id":ObjectId(id)}, {"$set": data})        
+            try:
+                promotions_col.find_one_and_update({"_id":ObjectId(id)}, {"$set": data})        
+            except InvalidId as e :
+                return jsonify({"detail":"Invalid id passed", "status":"error"}), 403
 
             return jsonify({"detail":"Promotion data updated", "status":"Unavailable"}),404
         return jsonify({"detail":"Unauthorized Access","status":"fail"}), 401
