@@ -7,7 +7,7 @@ import pymongo
 from backend.config import secret_key
 from werkzeug.security import check_password_hash, generate_password_hash
 from backend.db import admin_col, promotions_col,news_col
-from backend.functions import Authentication
+from backend.functions import Authentication, filter_cursor
 
 admin = Blueprint("admin", __name__)
 
@@ -39,6 +39,22 @@ def createAccount():
     admin_col.insert_one(data)
     return jsonify({"detail":"account created","status":"success"}), 200
 
+@admin.route("/signin", methods=["POST"])
+def signin():
+    info = request.json
+    email = info.get("email")
+    password = info.get("password")
+    
+    user_check = admin_col.find_one({"email":email}) #.hint("email_1")
+    if user_check is not None:    
+        pwd = user_check["pwd"]
+        pwd_check = check_password_hash(pwd, password)
+        if pwd_check == True:
+            user_check["id"] = str(ObjectId(user_check["_id"]))
+            user_check.pop("_id")
+            return jsonify(user_check)
+        return jsonify({"detail":"Incorrect password", "status":"fail"}), 403
+    return jsonify({"detail":"User Not found", "status":"error"}), 403
 
 @admin.route("/uploadProducts", methods=["POST","PUT", "GET", "DELETE"])
 @Authentication.token_required
