@@ -170,7 +170,7 @@ def home():
             "new_products": [],
             "lucky_picks":[]
         }
-        return jsonify(data_object)
+        return jsonify(detail=data_object, status="success"), 200
 
 
 @customer.route("/createRefreshToken",methods=["POST"])
