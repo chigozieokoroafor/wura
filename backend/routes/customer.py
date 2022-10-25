@@ -155,6 +155,28 @@ def newPassword():
     
     return jsonify({"detail":"Password Updated Successfully", "status":"success"}), 200
 
+@customer.route("/updateUserDetails", methods=["PUT"])
+@Authentication.token_required
+def updateDet():
+    info = request.json
+    data = {}
+    keys = [i for i in info.keys()]
+    for i in keys:
+        data[i] = info.get(i)
+    
+    try:
+        id = data["id"]
+    except KeyError as e :
+        return jsonify({"detail":"id parameter required","status":"fail"}),401
+
+    try:
+        for i in keys:
+            if data[i] == "" or data["id"] == " ":
+                data.pop(i)
+        users.find_one_and_update({"_id":bson.ObjectId(id)}, {"$set":data})
+        return jsonify({"detail":"User dertail uploaded", "status":"success"}), 200
+    except InvalidId as e:
+        return jsonify({"detail":"Invalid id value passed", "status":"error"}), 401
 
 
 @customer.route("/home", methods=["GET"])
