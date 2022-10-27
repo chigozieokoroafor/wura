@@ -5,7 +5,7 @@ from backend.functions import Authentication, filter_cursor
 from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
 from pymongo.errors import DuplicateKeyError
-import jwt, bson, datetime,random
+import jwt, bson, datetime,random, secrets
 from bson.errors import InvalidId
 
 
@@ -128,7 +128,8 @@ def email_verification():
             return jsonify(message="OTP Expired", status="error"), 400
         
         if otp_verify == True:
-            users.find_one_and_update({"email":email},{"$set":{"otp_data":{}, "verified":True}})
+            log_key = secrets.token_hex(32)
+            users.find_one_and_update({"email":email},{"$set":{"otp_data":{}, "verified":True, "login_key":log_key}})
             data = {"email":email}
             jwt_token = Authentication.generate_access_token(data,1)
             return jsonify({"detail":"OTP Correct", "status":"success","token":jwt_token}), 200
@@ -173,7 +174,11 @@ def updateDet():
             if data[i] == "" or data[i] == " ":
                 data.pop(i)
         users.find_one_and_update({"_id":bson.ObjectId(id)}, {"$set":data})
-        return jsonify({"detail":"User dertail uploaded", "status":"success"}), 200
+        user = users.find_one({"_id":bson.ObjectId(id)})
+        user.pop("_id")
+        user.pop("pwd")
+        user.pop("otp_data")
+        return jsonify({"detail":user, "status":"success"}), 200
     except InvalidId as e:
         return jsonify({"detail":"Invalid id value passed", "status":"error"}), 401
 
@@ -207,7 +212,12 @@ def createRefresh():
     if user_check is not None:
         data = {"id":id,"role":user_check["role"]}
         token = Authentication.generate_access_token(data,1440)
-        return jsonify({"detail":{"access_token":token}, "status":"success"}), 200
+        user_check["access_token"] = token
+        user_check.pop("_id")
+        user_check.pop("pwd")
+        user_check.pop("otp_data")
+
+        return jsonify({"detail":user_check, "status":"success"}), 200
     return jsonify({"detail":"User not found","status":"error"}), 404
 
 @customer.route("/test", methods=["GET"])

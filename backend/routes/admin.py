@@ -52,7 +52,7 @@ def signin():
         if pwd_check == True:
             user_check["id"] = str(ObjectId(user_check["_id"]))
             user_check.pop("_id")
-            return jsonify(user_check)
+            return jsonify(detail=user_check, status="success"), 200
         return jsonify({"detail":"Incorrect password", "status":"fail"}), 403
     return jsonify({"detail":"User Not found", "status":"error"}), 403
 
@@ -280,5 +280,9 @@ def createRefresh():
     if user_check is not None:
         data = {"id":id,"role":user_check["role"]}
         token = Authentication.generate_access_token(data,1440)
-        return jsonify({"detail":{"access_token":token}, "status":"success"}), 200
+        user_check["access_token"] = token
+        user_check.pop("_id")
+        user_check.pop("pwd")
+        #user_check.pop("otp_data")
+        return jsonify({"detail":user_check, "status":"success"}), 200
     return jsonify({"detail":"User not found","status":"error"}), 404
