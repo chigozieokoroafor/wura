@@ -201,7 +201,7 @@ def home():
 
 
 @customer.route("/createRefreshToken",methods=["POST"])
-@Authentication.token_required
+#@Authentication.token_required
 def createRefresh():
     info = request.json
     id = info.get("id")
