@@ -220,7 +220,7 @@ def news_route():
                 data[i] = info.get(i)
             data["timestamp"] = datetime.timestamp(datetime.now())
             news_col.insert_one(data)
-            return jsonify({"detail":"Promotion uploaded.", "status":"success"}), 200
+            return jsonify({"detail":"News uploaded.", "status":"success"}), 200
         return jsonify({"detail":"Unauthorized access","status":"error"}), 401
             
             
