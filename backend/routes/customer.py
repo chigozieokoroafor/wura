@@ -224,7 +224,7 @@ def createRefresh():
 
 @customer.route("/news", methods=["GET"])
 def getNEws():
-    page = request.args.get(page)
+    page = request.args.get("page")
     try:
         skip = int(page) * 10
     except :
