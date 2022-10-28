@@ -1,3 +1,4 @@
+from urllib.robotparser import RequestRate
 from flask import Blueprint, Response, jsonify, request
 import pymongo
 from backend.db import users, promotions_col,news_col
@@ -220,6 +221,19 @@ def createRefresh():
 
         return jsonify({"detail":user_check, "status":"success"}), 200
     return jsonify({"detail":"User not found","status":"error"}), 404
+
+@customer.route("/news", methods=["GET"])
+def getNEws():
+    cursor = news_col.find().skip(30).limit(30)
+    news_list = list(cursor)
+    data = []
+    if len(news_list)>0 :
+        for i in news_list:
+            i.pop('_id')
+            data.append(i)
+
+    return jsonify(detail=data, status="success"), 200
+
 
 @customer.route("/test", methods=["GET"])
 @Authentication.token_required #.token_required
