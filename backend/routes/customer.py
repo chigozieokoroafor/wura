@@ -224,7 +224,12 @@ def createRefresh():
 
 @customer.route("/news", methods=["GET"])
 def getNEws():
-    cursor = news_col.find().skip(30).limit(30)
+    page = request.args.get(page)
+    try:
+        skip = int(page) * 10
+    except :
+        return jsonify({"detail":"page parameter not passed or invalid", "status":"error"}), 400
+    cursor = news_col.find().skip(skip).limit(10)
     news_list = list(cursor)
     data = []
     if len(news_list)>0 :
