@@ -84,7 +84,7 @@ class Authentication:
         return ""
 
 
-def filter_cursor(cursor):
+def filter_cursor(cursor, pop_items=[]):
     main_list = []
     for i in cursor:
         i.pop("_id")

@@ -1,7 +1,7 @@
 from urllib.robotparser import RequestRate
 from flask import Blueprint, Response, jsonify, request
 import pymongo
-from backend.db import users, promotions_col,news_col
+from backend.db import users, promotions_col,news_col, image_folder_col
 from backend.functions import Authentication, filter_cursor
 from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -239,6 +239,22 @@ def getNEws():
 
     return jsonify(detail=data, status="success"), 200
 
+
+@customer.route("/gallery", methods=['GET'])
+def gallery():
+    page = request.args.get("page")
+    try:
+        offset = 30
+        skip = int(page*offset)
+    except Exception as e:
+        skip = 0
+    q_data = {"isFolder":True, "parent_id":""}
+    images_cursor = image_folder_col.find(q_data).skip(skip)
+    images = list(i for i in images_cursor)
+    for i in images:
+        i["id"] = str(bson.ObjectId(i["_id"]))
+        i.pop("_id")
+    return jsonify(detail=images, status="success"), 200
 
 @customer.route("/test", methods=["GET"])
 @Authentication.token_required #.token_required

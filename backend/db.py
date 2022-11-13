@@ -8,6 +8,8 @@ admin_col = db["admin"]
 products = db["products"]
 country = db["country_data"]
 promotions_col = db["promotions"]
+image_folder_col = db["images_fol"]
+image_col = db['images']
 news_col = db["news"]
 
 users.create_index("email", unique=True)
@@ -15,4 +17,7 @@ admin_col.create_index("email", unique=True)
 admin_col.create_index("username", unique=True)
 country.create_index("country", unique=True)
 products.create_index("category")
+#image_folder_col.create_index([('category', pymongo.ASCENDING)])
+image_col.create_index([('category', pymongo.ASCENDING)])
+image_folder_col.create_index("name", unique=True)
 #products.create_index([""])
