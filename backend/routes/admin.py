@@ -10,6 +10,7 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from backend.db import admin_col, promotions_col,news_col, image_folder_col, image_col
 from backend.functions import Authentication, filter_cursor
 import random
+import pymongo
 
 
 admin = Blueprint("admin", __name__)
@@ -359,7 +360,10 @@ def base():
                 if data[i] == "":
                     data.pop(i)
             data["timestamp_updated"] = datetime.timestamp(datetime.now())
-            item_Check = image_folder_col.find_one({"_id":ObjectId(id)})
+            try :
+                item_Check = image_folder_col.find_one({"_id":ObjectId(id)})
+            except InvalidId as e:
+                return jsonify({"detail":f"'id' passed is not valid", "status":"error"}), 400
             if item_Check == None:
                 return jsonify({"detail":"item with id not found", "status":"fail"}), 400
             try:
@@ -428,7 +432,7 @@ def images_route(folder_id):
                 skip = int(page*offset)
             except Exception as e:
                 skip = 0
-            images_cursor = image_col.find({"parent_id":folder_id}).skip(skip)
+            images_cursor = image_col.find({"parent_id":folder_id}).skip(skip).sort(["rank", pymongo.DESCENDING])
             image_list = list(i for i in images_cursor)
 
             for i in image_list:
