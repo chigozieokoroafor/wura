@@ -301,6 +301,7 @@ def base():
             data["parent_id"] =  ""
             data["isFolder"] = True
             data['category'] = ""
+            data["rank"] = image_folder_col.count_documents({}) * 10
             try:
                 image_folder_col.insert_one(data)
             except DuplicateKeyError as e:
@@ -410,10 +411,11 @@ def images_route(folder_id):
                 #category = data['category']
             except KeyError as E:
                 return jsonify({"detail":f'{E}  required', "status":"fail"}), 400
-
+            
             data["timestamp_created"] = datetime.timestamp(datetime.now())
             data["timestamp_updated"] = datetime.timestamp(datetime.now())
             data['parent_id'] = folder_id
+            data["rank"] = image_col.count_documents({}) * 10
             image_col.insert_one(data)
             
             return ({"detail":"Image Document Uploaded", 'status':"success"}), 200
@@ -432,14 +434,14 @@ def images_route(folder_id):
                 skip = int(page*offset)
             except Exception as e:
                 skip = 0
-            images_cursor = image_col.find({"parent_id":folder_id}).skip(skip).sort(["rank", pymongo.DESCENDING])
+            images_cursor = image_col.find({"parent_id":folder_id}).hint("parent_id_1").sort(["rank", pymongo.DESCENDING]).skip(skip)
             image_list = list(i for i in images_cursor)
 
             for i in image_list:
                 i["id"] = str(ObjectId(i["_id"]))
                 i.pop("_id")
-            x = random.choices(image_list,k=len(image_list))
-            return jsonify({"detail":x, "status":"success"}), 200
+            #x = random.choices(image_list,k=len(image_list))
+            return jsonify({"detail":image_list, "status":"success"}), 200
         return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
             
             

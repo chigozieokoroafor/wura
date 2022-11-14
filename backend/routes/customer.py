@@ -248,14 +248,14 @@ def gallery():
     except Exception as e:
         skip = 0
     #q_data = {"isFolder":True, "parent_id":""}
-    images_cursor = image_folder_col.find().skip(skip)
+    images_cursor = image_folder_col.find().sort(["rank", pymongo.DESCENDING]).skip(skip)
     try:
         images = list(i for i in images_cursor)
         for i in images:
             i["id"] = str(bson.ObjectId(i["_id"]))
             i.pop("_id")
-        x = random.choices(images,k=len(images))
-        return jsonify(detail=x, status="success"), 200
+        #x = random.choices(images,k=len(images))
+        return jsonify(detail=images, status="success"), 200
     except :
         return jsonify(detail=[], status="success"), 200
 
@@ -268,15 +268,15 @@ def folder_gallery(folder_id):
                 skip = int(page*offset)
             except Exception as e:
                 skip = 0
-            images_cursor = image_col.find({"parent_id":folder_id}).skip(skip)
+            images_cursor = image_col.find({"parent_id":folder_id}).hint("parent_id_1").sort(["rank", pymongo.DESCENDING]).skip(skip)
             try:
                 image_list = list(i for i in images_cursor)
 
                 for i in image_list:
                     i["id"] = str(bson.ObjectId(i["_id"]))
                     i.pop("_id")
-                x = random.choices(image_list,k=len(image_list))
-                return jsonify({"detail":x, "status":"success"}), 200
+                
+                return jsonify({"detail":image_list, "status":"success"}), 200
             except :
                 return jsonify({"detail":[], "status":"success"}), 200
         
