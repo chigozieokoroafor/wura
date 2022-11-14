@@ -253,6 +253,7 @@ def gallery():
     for i in images:
         i["id"] = str(bson.ObjectId(i["_id"]))
         i.pop("_id")
+    x = random.choices(images,k=len(images))
     return jsonify(detail=images, status="success"), 200
 
 @customer.route("/gallery/<folder_id>", methods=["GET"])
