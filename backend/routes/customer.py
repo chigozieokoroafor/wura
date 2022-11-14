@@ -249,12 +249,15 @@ def gallery():
         skip = 0
     #q_data = {"isFolder":True, "parent_id":""}
     images_cursor = image_folder_col.find().skip(skip)
-    images = list(i for i in images_cursor)
-    for i in images:
-        i["id"] = str(bson.ObjectId(i["_id"]))
-        i.pop("_id")
-    x = random.choices(images,k=len(images))
-    return jsonify(detail=images, status="success"), 200
+    try:
+        images = list(i for i in images_cursor)
+        for i in images:
+            i["id"] = str(bson.ObjectId(i["_id"]))
+            i.pop("_id")
+        x = random.choices(images,k=len(images))
+        return jsonify(detail=x, status="success"), 200
+    except :
+        return jsonify(detail=[], status="success"), 200
 
 @customer.route("/gallery/<folder_id>", methods=["GET"])
 def folder_gallery(folder_id):
