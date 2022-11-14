@@ -328,8 +328,8 @@ def base():
                 skip = int(page*offset)
             except Exception as e:
                 skip = 0
-            q_data = {"isFolder":True, "parent_id":""}
-            images_cursor = image_folder_col.find(q_data).skip(skip)
+            #q_data = {"isFolder":True, "parent_id":""}
+            images_cursor = image_folder_col.find().skip(skip)
             images = list(i for i in images_cursor)
             for i in images:
                 i["id"] = str(ObjectId(i["_id"]))
