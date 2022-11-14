@@ -9,6 +9,7 @@ from backend.config import secret_key
 from werkzeug.security import check_password_hash, generate_password_hash
 from backend.db import admin_col, promotions_col,news_col, image_folder_col, image_col
 from backend.functions import Authentication, filter_cursor
+import random
 
 
 admin = Blueprint("admin", __name__)
@@ -380,7 +381,7 @@ def base():
 
 #for navigating into folders
 @admin.route("/gallery/<folder_id>", methods=['POST', "PUT", "DELETE", "GET"])
-#@Authentication.token_required
+@Authentication.token_required
 def images_route(folder_id):
     token = request.headers.get("Authorization")
     decoded_data = jwt.decode(token, secret_key,["HS256"])
@@ -395,23 +396,22 @@ def images_route(folder_id):
             data = {}
             for i in keys:
                 data[i] = info.get(i)
+            
+            folder_check = image_folder_col.find_one({"_id":ObjectId(folder_id)})
+            if folder_check == None:
+                return jsonify({"detail":"Folder non-existent", "status":"fail"}), 400
             try:
                 url = data["image_url"]
                 name = data["name"]
-                category = data['category']
+                #category = data['category']
             except KeyError as E:
                 return jsonify({"detail":f'{E}  required', "status":"fail"}), 400
-            data["timestamp"] = datetime.timestamp(datetime.now())
-            if folder_id is None:
-                data["parent_id"] =  ""
-                image_col.insert_one(data)
-            else:
-                folder_check = image_col.find_one({"_id":ObjectId(folder_id)})
-                if folder_check == None:
-                    return jsonify({"detail":"Folder specified not found", "status":"fail"}), 400
-                data['parent_id']
-                image_col[folder_id].insert_one(data)
 
+            data["timestamp_created"] = datetime.timestamp(datetime.now())
+            data["timestamp_updated"] = datetime.timestamp(datetime.now())
+            data['parent_id'] = folder_id
+            image_col.insert_one(data)
+            
             return ({"detail":"Image Document Uploaded", 'status':"success"}), 200
         return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
         
@@ -428,14 +428,59 @@ def images_route(folder_id):
                 skip = int(page*offset)
             except Exception as e:
                 skip = 0
-            images_cursor = image_col.find().skip(skip)
-            images = None
+            images_cursor = image_col.find({"parent_id":folder_id}).skip(skip)
+            image_list = list(i for i in images_cursor)
+
+            for i in image_list:
+                i["id"] = str(ObjectId(i["_id"]))
+                i.pop("_id")
+            x = random.choices(image_list,k=len(image_list))
+            return jsonify({"detail":x, "status":"success"}), 200
+        return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
             
+            
+    if request.method == "PUT":
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401        
+        if "admin" in user_role:
+            info = request.json
+            keys = [i for i in info.keys()]
+            data = {}
+            for i in keys:
+                data[i] = info.get(i)
                 
-    if request.method == 'PUT':
-        pass
+            try:
+                id  = data["id"]
+                data.pop("id")
+            except KeyError as e:
+                return jsonify({"detail":f"{e} is required to update item","status":"fail"}), 400
+            for i in data.keys():
+                if data[i] == "":
+                    data.pop(i)
+            folder_check = image_folder_col.find_one({"_id":ObjectId(folder_id)})
+            if folder_check == None:
+                return jsonify({"detail":f"image folder with id {folder_id} not found", "status":"fail"}), 400
+            data["timestamp_updated"] = datetime.timestamp(datetime.now())
+            item_Check = image_col.find_one({"_id":ObjectId(id)})
+            if item_Check == None:
+                return jsonify({"detail":"item with id not found", "status":"fail"}), 400
+            try:
+                image_col.find_one_and_update({"_id":ObjectId(id)}, {"$set":data})
+            except InvalidId as e:
+                return jsonify({"detail":f"'id' passed is not valid", "status":"error"}), 400
+            updated_item = image_col.find_one({"_id":ObjectId(id)})
+            updated_item["id"] = str(ObjectId(updated_item["_id"]))
+            updated_item.pop("_id")
+            return jsonify({"detail":updated_item, "status":"success"}), 200
+                
+            
     if request.method == 'DELETE':
-        pass
+        id = request.args.get("id")
+        image_col.delete_one({"_id":ObjectId(id)})
+        return jsonify({"detail":"item deleted", "status":"success"}), 200
+
 
 @admin.route("/createRefreshToken",methods=["POST"])
 #@Authentication.token_required

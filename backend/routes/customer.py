@@ -1,7 +1,7 @@
 from urllib.robotparser import RequestRate
 from flask import Blueprint, Response, jsonify, request
 import pymongo
-from backend.db import users, promotions_col,news_col, image_folder_col
+from backend.db import users, promotions_col,news_col, image_folder_col, image_col
 from backend.functions import Authentication, filter_cursor
 from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -255,6 +255,29 @@ def gallery():
         i["id"] = str(bson.ObjectId(i["_id"]))
         i.pop("_id")
     return jsonify(detail=images, status="success"), 200
+
+@customer.route("/gallery/<folder_id>", methods=["GET"])
+def folder_gallery(folder_id):
+    if request.method == 'GET':
+            page = request.args.get("page")
+            try:
+                offset = 30
+                skip = int(page*offset)
+            except Exception as e:
+                skip = 0
+            images_cursor = image_col.find({"parent_id":folder_id}).skip(skip)
+            try:
+                image_list = list(i for i in images_cursor)
+
+                for i in image_list:
+                    i["id"] = str(bson.ObjectId(i["_id"]))
+                    i.pop("_id")
+                x = random.choices(image_list,k=len(image_list))
+                return jsonify({"detail":x, "status":"success"}), 200
+            except :
+                return jsonify({"detail":[], "status":"success"}), 200
+        
+
 
 @customer.route("/test", methods=["GET"])
 @Authentication.token_required #.token_required
