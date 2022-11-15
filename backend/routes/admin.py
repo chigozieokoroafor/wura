@@ -331,7 +331,7 @@ def base():
             except Exception as e:
                 skip = 0
             #q_data = {"isFolder":True, "parent_id":""}
-            images_cursor = image_folder_col.find().skip(skip)
+            images_cursor = image_folder_col.find().sort([("rank", pymongo.DESCENDING)]).skip(skip)
             images = list(i for i in images_cursor)
             for i in images:
                 i["id"] = str(ObjectId(i["_id"]))
@@ -434,7 +434,7 @@ def images_route(folder_id):
                 skip = int(page*offset)
             except Exception as e:
                 skip = 0
-            images_cursor = image_col.find({"parent_id":folder_id}).hint("parent_id_1").sort(["rank", pymongo.DESCENDING]).skip(skip)
+            images_cursor = image_col.find({"parent_id":folder_id}).hint("parent_id_1").sort([("rank", pymongo.DESCENDING)]).skip(skip)
             image_list = list(i for i in images_cursor)
 
             for i in image_list:
