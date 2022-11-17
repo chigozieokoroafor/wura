@@ -1,7 +1,7 @@
 from urllib.robotparser import RequestRate
 from flask import Blueprint, Response, jsonify, request
 import pymongo
-from backend.db import users, promotions_col,news_col, image_folder_col, image_col
+from backend.db import users, promotions_col,news_col, image_folder_col, image_col, category_col, products
 from backend.functions import Authentication, filter_cursor
 from backend.config import secret_key
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -279,7 +279,52 @@ def folder_gallery(folder_id):
                 return jsonify({"detail":image_list, "status":"success"}), 200
             except :
                 return jsonify({"detail":[], "status":"success"}), 200
+
+@customer.route("/category", methods=["GET"])    
+def get_category():
+    page = request.args.get("page")
+    try:
+        offset = 30
+        skip = int(page*offset)
+    except Exception as e:
+        skip = 0
+    cursor = category_col.find().sort([("rank", pymongo.DESCENDING)]).skip(skip)
+    category_list = list(i for i in cursor)
+    try:
+        for i in category_list:
+            i["id"] = str(bson.ObjectId(i["_id"]))
+            i.pop("_id")
+        return jsonify({"detail":category_list, "status":"success"}), 200
+    except Exception as e:
+        return jsonify({"detail":[], "status":"success"}), 200
+
+@customer.route("/category/<folder_id>", methods=["GET"])
+def category(folder_id):
+    if request.method == "GET":
+        page = request.args.get("page")
+        try:
+            page = int(page)
+            offset = 30
+            skip = page * offset
+        except Exception as e:
+            skip = 0
+        try:
+            folder_data = category_col.find_one({"_id":bson.ObjectId(folder_id)})
+        except InvalidId as e:
+            return jsonify({"detail":"folder non existent", "status":"fail"}), 400
+        if folder_data == None:
+            return jsonify({"detail":"folder non existent",  "status":"fail"}), 400
         
+        cursor = products.find({"parent_id":folder_id}).hint("parent_id_text").sort([("rank", pymongo.DESCENDING)]).skip(skip)
+        category_list = list(cursor)
+        for i in category_list:
+                i["id"] = str(bson.ObjectId(i["_id"]))
+                #i["category"] = folder_data["name"]
+                i.pop("_id")
+            #print(category_list)
+        return jsonify({"detail":category_list, "status":"success"}), 200
+        
+    
 
 
 @customer.route("/test", methods=["GET"])

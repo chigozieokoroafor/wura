@@ -7,7 +7,7 @@ from pymongo.errors import DuplicateKeyError
 from bson.errors import InvalidId
 from backend.config import secret_key
 from werkzeug.security import check_password_hash, generate_password_hash
-from backend.db import admin_col, promotions_col,news_col, image_folder_col, image_col
+from backend.db import admin_col, promotions_col,news_col, image_folder_col, image_col, category_col, products
 from backend.functions import Authentication, filter_cursor
 import random
 import pymongo
@@ -486,6 +486,233 @@ def images_route(folder_id):
         id = request.args.get("id")
         image_col.delete_one({"_id":ObjectId(id)})
         return jsonify({"detail":"item deleted", "status":"success"}), 200
+
+
+# for product category folders
+@admin.route("/category", methods=['POST', "PUT", "DELETE", "GET"])
+@Authentication.token_required
+def base_category():
+    token = request.headers.get("Authorization")
+    decoded_data = jwt.decode(token, secret_key,["HS256"])
+    if request.method == 'POST':
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401
+        if "admin" in user_role:
+            info = request.json
+            keys = [i for i in info.keys()]
+            data = {}
+            for i in keys:
+                data[i] = info.get(i)
+            
+            try:
+                url = data["image_url"]
+                name = data["name"]
+                #category = data['category']
+            except KeyError as E:
+                return jsonify({"detail":f'{E}  required', "status":"fail"}), 400
+            
+            data["timestamp_created"] = datetime.timestamp(datetime.now())
+            data["timestamp_updated"] = datetime.timestamp(datetime.now())
+            #data['parent_id'] = folder_id
+            data["rank"] = category_col.count_documents({}) * 10
+            try:
+                category_col.insert_one(data)
+                return ({"detail":"Category Folder created Uploaded", 'status':"success"}), 200
+            except DuplicateKeyError as e:
+                error = e.details
+                #return jsonify({"detail":f"folder with {e.args} exists"}), 400
+                error_keys = error["keyValue"].keys()
+                error_list = []
+                for i in error_keys:
+                    string = f'folder with {i} "{error["keyValue"][i]}" exists'
+                    error_list.append(string)
+
+                return jsonify(detail=error_list, status='error'), 400
+        return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
+        
+
+    if request.method == 'GET':
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401
+        if "admin" in user_role:
+            page = request.args.get("page")
+            try:
+                offset = 30
+                skip = int(page*offset)
+            except Exception as e:
+                skip = 0
+            category_cursor = category_col.find().sort([("rank", pymongo.DESCENDING)]).skip(skip)
+            category_list = list(i for i in category_cursor)
+
+            for i in category_list:
+                i["id"] = str(ObjectId(i["_id"]))
+                i.pop("_id")
+            #x = random.choices(image_list,k=len(image_list))
+            return jsonify({"detail":category_list, "status":"success"}), 200
+        return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
+            
+            
+    if request.method == "PUT":
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401        
+        if "admin" in user_role:
+            info = request.json
+            keys = [i for i in info.keys()]
+            data = {}
+            for i in keys:
+                data[i] = info.get(i)
+                
+            try:
+                id  = data["id"]
+                data.pop("id")
+            except KeyError as e:
+                return jsonify({"detail":f"{e} is required to update item","status":"fail"}), 400
+            for i in data.keys():
+                if data[i] == "":
+                    data.pop(i)
+            folder_check = category_col.find_one({"_id":ObjectId(id)})
+            if folder_check == None:
+                return jsonify({"detail":f"Category folder with id {id} not found", "status":"fail"}), 400
+            data["timestamp_updated"] = datetime.timestamp(datetime.now())
+            try:
+                category_col.find_one_and_update({"_id":ObjectId(id)}, {"$set":data})
+            except InvalidId as e:
+                return jsonify({"detail":f"'id' passed is not valid", "status":"error"}), 400
+            updated_item = category_col.find_one({"_id":ObjectId(id)})
+            updated_item["id"] = str(ObjectId(updated_item["_id"]))
+            updated_item.pop("_id")
+            return jsonify({"detail":updated_item, "status":"success"}), 200
+                
+            
+    if request.method == 'DELETE':
+        id = request.args.get("id")
+        category_col.delete_one({"_id":ObjectId(id)})
+        return jsonify({"detail":"Folder deleted", "status":"success"}), 200
+
+
+@admin.route("/category/<folder_id>", methods=['POST', "PUT", "DELETE", "GET"])
+@Authentication.token_required
+def category_items(folder_id):
+    token = request.headers.get("Authorization")
+    decoded_data = jwt.decode(token, secret_key,["HS256"])
+    if request.method == 'POST':
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401
+        if "admin" in user_role:
+            info = request.json
+            keys = [i for i in info.keys()]
+            data = {}
+            for i in keys:
+                data[i] = info.get(i)
+            
+            try:
+                url = data["image_url"]
+                name = data["name"]
+                price = data["price"]
+                #category = data['category']
+            except KeyError as E:
+                return jsonify({"detail":f'{E}  required', "status":"fail"}), 400
+            try:
+                folder_Check = category_col.find_one({"_id":ObjectId(folder_id)})
+            except InvalidId as e:
+                return jsonify({"detail":"Folder non existent", "status":"error"}), 400
+            if folder_Check == None:
+                return jsonify({"detail":"Folder specified not existent", "status":"error"}), 400
+
+            data["timestamp_created"] = datetime.timestamp(datetime.now())
+            data["timestamp_updated"] = datetime.timestamp(datetime.now())
+            data['parent_id'] = folder_id
+            data["rank"] = products.count_documents({"parent_id":folder_id}) * 10
+            data["category"] = folder_Check["name"]
+            try:
+                products.insert_one(data)
+                return ({"detail":"Category Folder created Uploaded", 'status':"success"}), 200
+            except DuplicateKeyError as e:
+                error = e.details
+                #return jsonify({"detail":f"folder with {e.args} exists"}), 400
+                error_keys = error["keyValue"].keys()
+                error_list = []
+                for i in error_keys:
+                    string = f'folder with {i} "{error["keyValue"][i]}" exists'
+                    error_list.append(string)
+
+                return jsonify(detail=error_list, status='error'), 400
+        return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
+        
+
+    if request.method == 'GET':
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401
+        if "admin" in user_role:
+            page = request.args.get("page")
+            try:
+                offset = 30
+                skip = int(page*offset)
+            except Exception as e:
+                skip = 0
+            category_cursor = products.find({"parent_id":folder_id}).sort([("rank", pymongo.DESCENDING)]).skip(skip)
+            category_list = list(i for i in category_cursor)
+
+            for i in category_list:
+                i["id"] = str(ObjectId(i["_id"]))
+                i.pop("_id")
+            #x = random.choices(image_list,k=len(image_list))
+            return jsonify({"detail":category_list, "status":"success"}), 200
+        return jsonify({"detail":"Unauthorized Access", "status":"error"}), 401
+            
+            
+    if request.method == "PUT":
+        try:
+            user_role = decoded_data["role"]
+        except KeyError as e:
+            return jsonify({"detail":"Unauthorized access", "status":"error"}), 401        
+        if "admin" in user_role:
+            info = request.json
+            keys = [i for i in info.keys()]
+            data = {}
+            for i in keys:
+                data[i] = info.get(i)
+                
+            try:
+                id  = data["id"]
+                data.pop("id")
+            except KeyError as e:
+                return jsonify({"detail":f"{e} is required to update item","status":"fail"}), 400
+            for i in data.keys():
+                if data[i] == "":
+                    data.pop(i)
+            try:
+                folder_check = products.find_one({"_id":ObjectId(id)})
+            except InvalidId as e:
+                return jsonify({"detail":f"folder non existent", "status":"fail"}), 400
+            if folder_check == None:
+                return jsonify({"detail":f"folder non existent", "status":"fail"}), 400
+
+            data["timestamp_updated"] = datetime.timestamp(datetime.now())
+            try:
+                products.find_one_and_update({"_id":ObjectId(id)}, {"$set":data})
+            except InvalidId as e:
+                return jsonify({"detail":f"'id' passed is not valid", "status":"error"}), 400
+            updated_item = products.find_one({"_id":ObjectId(id)})
+            updated_item["id"] = str(ObjectId(updated_item["_id"]))
+            updated_item.pop("_id")
+            return jsonify({"detail":updated_item, "status":"success"}), 200
+                
+            
+    if request.method == 'DELETE':
+        id = request.args.get("id")
+        products.delete_one({"_id":ObjectId(id)})
+        return jsonify({"detail":"Folder deleted", "status":"success"}), 200
 
 
 @admin.route("/createRefreshToken",methods=["POST"])
