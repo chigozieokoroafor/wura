@@ -1,7 +1,7 @@
 import pymongo
 
-#connection = pymongo.MongoClient("mongodb://backend:wurafadaka@34.224.97.100:27017/")
-connection = pymongo.MongoClient()
+connection = pymongo.MongoClient("mongodb://backend:wurafadaka@34.224.97.100:27017/")
+#connection = pymongo.MongoClient()
 db = connection["FADAKA"]
 users = db["users"]
 admin_col = db["admin"]
