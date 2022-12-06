@@ -13,6 +13,7 @@ from functools import wraps
 from jwt.exceptions import ExpiredSignatureError, DecodeError
 
 
+
 class Authentication:
     def generate_access_token(data, minutes=60):
         exp = datetime.datetime.now() + datetime.timedelta(minutes=minutes)
