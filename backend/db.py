@@ -1,6 +1,8 @@
 import pymongo
 
-connection = pymongo.MongoClient("mongodb://backend:wurafadaka@34.224.97.100:27017/")
+connection = pymongo.MongoClient("mongodb+srv://wurafadaka:2KnhrZmyt77LWfHP@wurafadaka.9vc2yie.mongodb.net/?retryWrites=true&w=majority")
+
+
 #connection = pymongo.MongoClient()
 db = connection["FADAKA"]
 users = db["users"]
